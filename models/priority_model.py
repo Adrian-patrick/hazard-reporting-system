@@ -3,7 +3,7 @@ import joblib
 import pandas as pd
 
 # TomTom API key
-API_KEY = "PRfZyaNpBfEHm0GHdT4Dny2FOTn8euNq"
+API_KEY = "Enter your own API Key"
 
 # Latitude and Longitude
 latitude = 13.0242
