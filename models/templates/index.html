@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hazard Reporting System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            width: 80%;
+            margin: 50px auto;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        label {
+            font-weight: bold;
+        }
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .result {
+            margin-top: 20px;
+        }
+        .result p {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Hazard Reporting System</h1>
+    <form id="hazardForm">
+        <label for="description">Hazard Description:</label>
+        <textarea id="description" rows="4" required></textarea>
+        
+        <label for="latitude">Latitude:</label>
+        <input type="text" id="latitude" required>
+        
+        <label for="longitude">Longitude:</label>
+        <input type="text" id="longitude" required>
+        
+        <button type="submit">Predict Hazard Type & Priority</button>
+    </form>
+    
+    <div class="result" id="result">
+        <p id="hazardType"></p>
+        <p id="priorityLevel"></p>
+    </div>
+</div>
+
+<script>
+    document.getElementById('hazardForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const description = document.getElementById('description').value;
+        const latitude = document.getElementById('latitude').value;
+        const longitude = document.getElementById('longitude').value;
+
+        const data = {
+            description: description,
+            latitude: latitude,
+            longitude: longitude
+        };
+
+        fetch('/predict', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('hazardType').innerText = "Predicted Hazard Type: " + data.hazard_type;
+            document.getElementById('priorityLevel').innerText = "Predicted Priority Level: " + data.priority_level;
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+    });
+</script>
+
+</body>
+</html>
