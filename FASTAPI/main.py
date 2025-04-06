@@ -17,7 +17,8 @@ from pydantic import BaseModel, Field
 from torchvision import models, transforms
 
 # === ✅ Load Env Variables === #
-load_dotenv("C:/Users/krish/OneDrive/community hazard project/projectfinal/project/.env")
+env_path = Path(__file__).resolve().parent.parent / ".env"
+load_dotenv(dotenv_path=env_path)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 HERE_API_KEY = os.getenv("HERE_API_KEY")
 OWM_API_KEY = os.getenv("OWM_API_KEY")
