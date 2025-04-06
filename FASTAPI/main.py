@@ -17,21 +17,21 @@ from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
 from torchvision import models, transforms
 
-# === ✅ Load Env Variables === #
+# === ✅ Load Environment Variables === #
 env_path = Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(dotenv_path=env_path)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 HERE_API_KEY = os.getenv("HERE_API_KEY")
 OWM_API_KEY = os.getenv("OWM_API_KEY")
-MONGO_URL = os.getenv("MONGO_URL", "your-mongodb-default-url")
+MONGO_URL = os.getenv("MONGO_URL", "mongodb://localhost:27017")
 
-# === ✅ FastAPI App Initialization === #
+# === ✅ FastAPI Initialization === #
 app = FastAPI()
 
-# === ✅ Enable CORS === #
+# === ✅ Enable CORS (for development & Render) === #
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For Render, allow all during dev. You can restrict in prod.
+    allow_origins=["*"],  # Change in prod
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -45,14 +45,15 @@ classification_collection = db["classifications"]
 
 # === ✅ Load Image Classification Model === #
 image_model_path = Path("models/finalimageclass.pth")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 image_model = models.efficientnet_b0(pretrained=False)
 image_model.classifier[1] = torch.nn.Linear(image_model.classifier[1].in_features, 3)
 
 try:
-    image_model.load_state_dict(torch.load(image_model_path, map_location=torch.device("cpu")))
-    image_model.eval()
+    image_model.load_state_dict(torch.load(image_model_path, map_location=device))
+    image_model.to(device).eval()
 except Exception as e:
-    print(f"❌ Error loading image model: {e}")
+    print(f"❌ Error loading image classification model: {e}")
 
 image_transform = transforms.Compose([
     transforms.Resize((224, 224)),
@@ -69,18 +70,13 @@ try:
     text_model = joblib.load(text_model_path)
     vectorizer = joblib.load(vectorizer_path)
 except Exception as e:
-    print(f"❌ Error loading text model: {e}")
+    print(f"❌ Error loading text classification model/vectorizer: {e}")
 
-# === ✅ Priority Threshold Function === #
+# === ✅ Priority Score to Label === #
 def get_priority_label(score):
-    if score < 40:
-        return "Low"
-    elif 40 <= score < 70:
-        return "Medium"
-    else:
-        return "High"
+    return "Low" if score < 40 else "Medium" if score < 70 else "High"
 
-# === ✅ MongoDB Model === #
+# === ✅ MongoDB Model Schema === #
 class HazardModel(BaseModel):
     id: str = Field(alias="_id")
     title: str
@@ -90,11 +86,10 @@ class HazardModel(BaseModel):
     @classmethod
     def from_mongo(cls, data):
         data["_id"] = str(data["_id"])
-        if isinstance(data.get("createdAt"), datetime):
-            data["createdAt"] = data["createdAt"].isoformat()
+        data["createdAt"] = data["createdAt"].isoformat() if isinstance(data.get("createdAt"), datetime) else str(data.get("createdAt"))
         return cls(**data)
 
-# === ✅ Gemini Chat Input === #
+# === ✅ Gemini Chat Input Model === #
 class ChatRequest(BaseModel):
     message: str
 
@@ -104,9 +99,10 @@ def get_latest_hazards(limit=3):
         hazards = list(collection.find().sort("createdAt", -1).limit(limit))
         return [HazardModel.from_mongo(h).dict() for h in hazards]
     except Exception as e:
+        print(f"❌ Error fetching latest hazards: {e}")
         return []
 
-# === 🚀 Generate Gemini Response === #
+# === 🚀 Gemini API Chat Response === #
 def generate_response(user_message):
     recent = get_latest_hazards()
     if not recent:
@@ -114,99 +110,92 @@ def generate_response(user_message):
 
     prompt = f"""
     You are a hazard assistant. Based on recent hazard reports, provide helpful advice.
-
     Recent Hazards:
     {json.dumps(recent, indent=2)}
-
     User: {user_message}
     AI:
     """
-
     try:
         res = requests.post(
             f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}",
             json={"contents": [{"parts": [{"text": prompt}]}]},
             headers={"Content-Type": "application/json"}
         )
-        data = res.json()
-        return data["candidates"][0]["content"]["parts"][0]["text"]
+        return res.json()["candidates"][0]["content"]["parts"][0]["text"]
     except Exception as e:
-        return f"❌ Gemini API error: {e}"
+        return f"❌ Gemini API error: {str(e)}"
 
-# === 📷 Base64 Image Classification === #
+# === 📷 Base64 Image Classification Endpoint === #
 @app.post("/classify/image_base64/")
-async def classify_image_base64(image_base64: str = Form(...), title: str = Form(None)):
+async def classify_image_base64(image_base64: str = Form(...), title: str = Form("Untitled")):
     try:
         image_data = base64.b64decode(image_base64)
         image = Image.open(io.BytesIO(image_data)).convert("RGB")
-        transformed_image = image_transform(image).unsqueeze(0)
+        image_tensor = image_transform(image).unsqueeze(0).to(device)
 
         with torch.no_grad():
-            outputs = image_model(transformed_image)
-            _, predicted = torch.max(outputs, 1)
+            output = image_model(image_tensor)
+            _, predicted = torch.max(output, 1)
             predicted_class = ["Garbage", "Road", "Water"][predicted.item()]
 
         classification_collection.insert_one({
             "type": "image",
-            "title": title or "Untitled",
+            "title": title,
             "predicted_class": predicted_class,
             "createdAt": datetime.utcnow()
         })
-
         return {"predicted_class": predicted_class}
     except Exception as e:
         return {"error": str(e)}
 
-# === 📝 Text Classification === #
+# === 📝 Text Classification Endpoint === #
 @app.post("/classify/text/")
-async def classify_text(description: str = Form(...), title: str = Form(None)):
+async def classify_text(description: str = Form(...), title: str = Form("Untitled")):
     try:
         transformed = vectorizer.transform([description])
-        pred = text_model.predict(transformed)[0]
-        predicted_class = ["Garbage", "Road", "Water"][pred]
+        prediction = text_model.predict(transformed)[0]
+        predicted_class = ["Garbage", "Road", "Water"][prediction]
 
         classification_collection.insert_one({
             "type": "text",
-            "title": title or "Untitled",
+            "title": title,
             "description": description,
             "predicted_class": predicted_class,
             "createdAt": datetime.utcnow()
         })
-
         return {"predicted_class": predicted_class}
     except Exception as e:
         return {"error": str(e)}
 
-# === 📍 Priority Scoring === #
+# === 📍 Priority Scoring Endpoint === #
 @app.post("/priority/")
-async def get_priority(lat: float = Form(...), lon: float = Form(...), title: str = Form(None)):
+async def get_priority(lat: float = Form(...), lon: float = Form(...), title: str = Form("Untitled")):
     try:
         bbox = f"{lon-0.002},{lat-0.002},{lon+0.002},{lat+0.002}"
-        traffic_url = f"https://data.traffic.hereapi.com/v7/flow?in=bbox:{bbox}&apiKey={HERE_API_KEY}"
-        traffic_data = requests.get(traffic_url).json()
+        traffic_data = requests.get(
+            f"https://data.traffic.hereapi.com/v7/flow?in=bbox:{bbox}&apiKey={HERE_API_KEY}"
+        ).json()
         segments = traffic_data.get("results", [])
         traffic_score = sum(seg.get("currentFlow", {}).get("jamFactor", 0) * 10 for seg in segments) / max(len(segments), 1)
 
-        weather_url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={OWM_API_KEY}&units=metric"
-        weather_data = requests.get(weather_url).json()
-        weather_score = 30 if "clear" in weather_data.get("weather", [{}])[0].get("description", "").lower() else 80
+        weather_data = requests.get(
+            f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={OWM_API_KEY}&units=metric"
+        ).json()
+        weather_desc = weather_data.get("weather", [{}])[0].get("description", "").lower()
+        weather_score = 30 if "clear" in weather_desc else 80
 
         priority_score = round(0.6 * traffic_score + 0.4 * weather_score, 2)
         priority_label = get_priority_label(priority_score)
 
         classification_collection.insert_one({
             "type": "priority",
-            "title": title or "Untitled",
+            "title": title,
             "location": {"lat": lat, "lon": lon},
             "priority_score": priority_score,
             "priority_label": priority_label,
             "createdAt": datetime.utcnow()
         })
-
-        return {
-            "priority_score": priority_score,
-            "priority_label": priority_label
-        }
+        return {"priority_score": priority_score, "priority_label": priority_label}
     except Exception as e:
         return {"error": str(e)}
 
@@ -217,12 +206,7 @@ async def chat(request: ChatRequest):
 
 # === 🧠 Unified Classify & Score Endpoint === #
 @app.post("/classify_and_score/")
-async def classify_and_score(
-    description: str = Form(...),
-    image_url: str = Form(...),
-    lat: float = Form(...),
-    lon: float = Form(...)
-):
+async def classify_and_score(description: str = Form(...), image_url: str = Form(...), lat: float = Form(...), lon: float = Form(...)):
     try:
         # Text Classification
         text_transformed = vectorizer.transform([description])
@@ -233,7 +217,7 @@ async def classify_and_score(
         response = requests.get(image_url)
         response.raise_for_status()
         image = Image.open(io.BytesIO(response.content)).convert("RGB")
-        transformed_image = image_transform(image).unsqueeze(0)
+        transformed_image = image_transform(image).unsqueeze(0).to(device)
         with torch.no_grad():
             outputs = image_model(transformed_image)
             _, image_pred = torch.max(outputs, 1)
@@ -254,7 +238,7 @@ async def classify_and_score(
         priority_score = round(0.6 * traffic_score + 0.4 * weather_score, 2)
         priority_label = get_priority_label(priority_score)
 
-        # Save to DB
+        # Store result
         classification_collection.insert_one({
             "description": description,
             "image_url": image_url,
@@ -274,4 +258,4 @@ async def classify_and_score(
         }
 
     except Exception as e:
-        return {"error": f"Unified classification error: {e}"}
+        return {"error": f"Unified classification error: {str(e)}"}
