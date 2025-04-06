@@ -8,6 +8,7 @@ import joblib
 import numpy as np
 from PIL import Image
 from datetime import datetime
+from pathlib import Path
 from pymongo import MongoClient
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, UploadFile, Form
@@ -22,6 +23,7 @@ load_dotenv(dotenv_path=env_path)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 HERE_API_KEY = os.getenv("HERE_API_KEY")
 OWM_API_KEY = os.getenv("OWM_API_KEY")
+MONGO_URL = os.getenv("MONGO_URL", "your-mongodb-default-url")
 
 # === ✅ FastAPI App Initialization === #
 app = FastAPI()
@@ -29,21 +31,20 @@ app = FastAPI()
 # === ✅ Enable CORS === #
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["*"],  # For Render, allow all during dev. You can restrict in prod.
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # === ✅ MongoDB Setup === #
-MONGO_URL = "mongodb+srv://krishnakg1205:QeFSlp7F1MFB3wy8@cluster0.8kj0f.mongodb.net/sample-db?retryWrites=true&w=majority&appName=Cluster0"
 client = MongoClient(MONGO_URL)
 db = client["sample-db"]
 collection = db["hazards"]
 classification_collection = db["classifications"]
 
 # === ✅ Load Image Classification Model === #
-image_model_path = "C:/Users/krish/Downloads/ml_models/final/models/finalimageclass.pth"
+image_model_path = Path("models/finalimageclass.pth")
 image_model = models.efficientnet_b0(pretrained=False)
 image_model.classifier[1] = torch.nn.Linear(image_model.classifier[1].in_features, 3)
 
@@ -61,8 +62,8 @@ image_transform = transforms.Compose([
 ])
 
 # === ✅ Load Text Classification Model === #
-text_model_path = "C:/Users/krish/Downloads/ml_models/final/models/finaltextclass.pkl"
-vectorizer_path = "C:/Users/krish/Downloads/ml_models/final/models/text_vectorizer.pkl"
+text_model_path = Path("models/finaltextclass.pkl")
+vectorizer_path = Path("models/text_vectorizer.pkl")
 
 try:
     text_model = joblib.load(text_model_path)
@@ -223,12 +224,12 @@ async def classify_and_score(
     lon: float = Form(...)
 ):
     try:
-        # 1. Text Classification
+        # Text Classification
         text_transformed = vectorizer.transform([description])
         text_pred = text_model.predict(text_transformed)[0]
         predicted_text_class = ["Garbage", "Road", "Water"][text_pred]
 
-        # 2. Image Classification
+        # Image Classification
         response = requests.get(image_url)
         response.raise_for_status()
         image = Image.open(io.BytesIO(response.content)).convert("RGB")
@@ -238,7 +239,7 @@ async def classify_and_score(
             _, image_pred = torch.max(outputs, 1)
         predicted_image_class = ["Garbage", "Road", "Water"][image_pred.item()]
 
-        # 3. Priority Scoring
+        # Priority Scoring
         bbox = f"{lon-0.002},{lat-0.002},{lon+0.002},{lat+0.002}"
         traffic_data = requests.get(
             f"https://data.traffic.hereapi.com/v7/flow?in=bbox:{bbox}&apiKey={HERE_API_KEY}"
@@ -253,8 +254,8 @@ async def classify_and_score(
         priority_score = round(0.6 * traffic_score + 0.4 * weather_score, 2)
         priority_label = get_priority_label(priority_score)
 
-        # 4. Save Merged Result
-        db["classifications"].insert_one({
+        # Save to DB
+        classification_collection.insert_one({
             "description": description,
             "image_url": image_url,
             "predicted_text_class": predicted_text_class,
@@ -265,7 +266,6 @@ async def classify_and_score(
             "createdAt": datetime.utcnow()
         })
 
-        # 5. Return
         return {
             "text_class": predicted_text_class,
             "image_class": predicted_image_class,
