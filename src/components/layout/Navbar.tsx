@@ -53,6 +53,13 @@ const Navbar: React.FC = () => {
               >
                 About
               </Link>
+              <Link
+                to="/report"
+                className="border-transparent text-red-500 hover:border-red-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+              >
+                REPORT HAZARD
+              </Link>
+              
             </div>
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
@@ -60,7 +67,7 @@ const Navbar: React.FC = () => {
               <>
                 <button
                   type="button"
-                  className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
                 >
                   <span className="sr-only">View notifications</span>
                   <Bell className="h-6 w-6" />
@@ -72,7 +79,7 @@ const Navbar: React.FC = () => {
                     </span>
                     <button
                       type="button"
-                      className="bg-white rounded-full flex text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      className="bg-white rounded-full flex text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
                     >
                       <span className="sr-only">Open user menu</span>
                       <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
@@ -81,7 +88,7 @@ const Navbar: React.FC = () => {
                     </button>
                     <button
                       onClick={handleLogout}
-                      className="ml-2 p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      className="ml-2 p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
                     >
                       <LogOut className="h-5 w-5" />
                     </button>
@@ -111,7 +118,7 @@ const Navbar: React.FC = () => {
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               type="button"
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-purple-500"
               aria-expanded="false"
             >
               <span className="sr-only">Open main menu</span>
@@ -131,7 +138,7 @@ const Navbar: React.FC = () => {
           <div className="pt-2 pb-3 space-y-1">
             <Link
               to="/"
-              className="bg-gray-50 border-blue-500 text-blue-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium"
+              className="bg-gray-50 border-purple-500 text-purple-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium"
               onClick={() => setIsMenuOpen(false)}
             >
               Home
@@ -174,7 +181,7 @@ const Navbar: React.FC = () => {
                 </div>
                 <button
                   type="button"
-                  className="ml-auto flex-shrink-0 p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="ml-auto flex-shrink-0 p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
                 >
                   <span className="sr-only">View notifications</span>
                   <Bell className="h-6 w-6" aria-hidden="true" />

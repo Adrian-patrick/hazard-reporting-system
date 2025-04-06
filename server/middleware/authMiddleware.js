@@ -1,40 +1,52 @@
-import jwt from 'jsonwebtoken';
-import asyncHandler from 'express-async-handler';
-import User from '../models/userModel.js';
+import jwt from "jsonwebtoken";
+import asyncHandler from "express-async-handler";
+import User from "../models/userModel.js"; // Ensure the correct path
 
-export const protect = asyncHandler(async (req, res, next) => {
-  let token;
+const protect = asyncHandler(async (req, res, next) => {
+  let token = req.headers.authorization;
 
-  if (req.headers.authorization?.startsWith('Bearer')) {
+  console.log("🔍 Incoming Authorization Header:", token); // Debugging log
+
+  if (token && token.startsWith("Bearer ")) {
     try {
-      // Get token from header
-      token = req.headers.authorization.split(' ')[1];
+      token = token.split(" ")[1]; // Extract token
+      console.log("🔹 Extracted Token:", token);
 
-      // Verify token
+      // Ensure JWT_SECRET is available
+      if (!process.env.JWT_SECRET) {
+        throw new Error("Missing JWT_SECRET in environment variables");
+      }
+
+      // Verify Token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log("✅ Decoded Token:", decoded);
 
-      // Get user from the token
-      req.user = await User.findById(decoded.id).select('-password');
+      // Fetch user from database
+      req.user = await User.findById(decoded.id).select("-password");
+
+      if (!req.user) {
+        console.error("❌ User Not Found in Database.");
+        return res.status(401).json({ message: "Unauthorized: User no longer exists." });
+      }
 
       next();
     } catch (error) {
-      res.status(401);
-      throw new Error('Not authorized, token failed');
+      console.error("❌ JWT Verification Error:", error.message);
+      return res.status(401).json({ message: "❌ Unauthorized: Invalid or Expired Token" });
     }
-  }
-
-  if (!token) {
-    res.status(401);
-    throw new Error('Not authorized, no token');
+  } else {
+    console.error("🚨 No Token Provided");
+    return res.status(401).json({ message: "🚨 Access Denied: No token provided. Please log in." });
   }
 });
 
-export const authorize = (...roles) => {
+const authorize = (...roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-      res.status(403);
-      throw new Error(`User role ${req.user.role} is not authorized to access this route`);
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res.status(403).json({ message: "❌ Forbidden: You do not have permission." });
     }
     next();
   };
 };
+
+export { protect, authorize };

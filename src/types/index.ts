@@ -4,8 +4,8 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: UserRole;
-  createdAt: string;
+  token?: string;  // ✅ Ensure token is included and optional (?)
+  role: 'user' | 'authority';
 }
 
 export type HazardStatus = 'reported' | 'in-progress' | 'resolved' | 'dismissed';
@@ -21,6 +21,7 @@ export type HazardType =
   | 'other';
 
 export interface HazardReport {
+  _id: any;
   id: string;
   title: string;
   description: string;

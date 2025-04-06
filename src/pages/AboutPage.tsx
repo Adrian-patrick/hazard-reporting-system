@@ -10,10 +10,10 @@ const AboutPage: React.FC = () => {
       
       <main className="flex-grow">
         {/* Hero Section */}
-        <section className="bg-blue-700 text-white py-16">
+        <section className="bg-purple-700 text-white py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h1 className="text-4xl font-bold">About HazardAlert</h1>
-            <p className="mt-4 text-xl text-blue-100 max-w-3xl mx-auto">
+            <p className="mt-4 text-xl text-purple-100 max-w-3xl mx-auto">
               A community-driven platform connecting residents and authorities to identify and resolve hazards efficiently.
             </p>
           </div>
@@ -55,7 +55,7 @@ const AboutPage: React.FC = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               <div className="bg-white rounded-lg p-8 text-center shadow-md">
-                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 text-blue-600 mb-6">
+                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-purple-100 text-purple-600 mb-6">
                   <AlertTriangle className="h-8 w-8" />
                 </div>
                 <h3 className="text-xl font-medium text-gray-900 mb-4">1. Report</h3>
@@ -65,7 +65,7 @@ const AboutPage: React.FC = () => {
               </div>
               
               <div className="bg-white rounded-lg p-8 text-center shadow-md">
-                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 text-blue-600 mb-6">
+                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-purple-100 text-purple-600 mb-6">
                   <MapPin className="h-8 w-8" />
                 </div>
                 <h3 className="text-xl font-medium text-gray-900 mb-4">2. Locate</h3>
@@ -75,7 +75,7 @@ const AboutPage: React.FC = () => {
               </div>
               
               <div className="bg-white rounded-lg p-8 text-center shadow-md">
-                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 text-blue-600 mb-6">
+                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-purple-100 text-purple-600 mb-6">
                   <Clock className="h-8 w-8" />
                 </div>
                 <h3 className="text-xl font-medium text-gray-900 mb-4">3. Respond</h3>
@@ -85,7 +85,7 @@ const AboutPage: React.FC = () => {
               </div>
               
               <div className="bg-white rounded-lg p-8 text-center shadow-md">
-                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 text-blue-600 mb-6">
+                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-purple-100 text-purple-600 mb-6">
                   <CheckCircle className="h-8 w-8" />
                 </div>
                 <h3 className="text-xl font-medium text-gray-900 mb-4">4. Resolve</h3>
@@ -108,9 +108,9 @@ const AboutPage: React.FC = () => {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-              <div className="bg-blue-50 rounded-lg p-8 shadow-md">
+              <div className="bg-purple-50 rounded-lg p-8 shadow-md">
                 <div className="flex items-center mb-6">
-                  <div className="flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 text-blue-600 mr-4">
+                  <div className="flex items-center justify-center h-12 w-12 rounded-full bg-purple-100 text-purple-600 mr-4">
                     <Users className="h-6 w-6" />
                   </div>
                   <h3 className="text-xl font-medium text-gray-900">For Community Members</h3>
@@ -139,9 +139,9 @@ const AboutPage: React.FC = () => {
                 </ul>
               </div>
               
-              <div className="bg-blue-50 rounded-lg p-8 shadow-md">
+              <div className="bg-purple-50 rounded-lg p-8 shadow-md">
                 <div className="flex items-center mb-6">
-                  <div className="flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 text-blue-600 mr-4">
+                  <div className="flex items-center justify-center h-12 w-12 rounded-full bg-purple-100 text-purple-600 mr-4">
                     <Shield className="h-6 w-6" />
                   </div>
                   <h3 className="text-xl font-medium text-gray-900">For Local Authorities</h3>

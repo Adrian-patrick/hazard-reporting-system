@@ -87,7 +87,7 @@ const HazardCard: React.FC<HazardCardProps> = ({ hazard }) => {
       <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex justify-between">
         <Link
           to={`/hazards/${hazard.id}`}
-          className="text-sm font-medium text-blue-600 hover:text-blue-500"
+          className="text-sm font-medium text-purple-600 hover:text-purple-500"
         >
           View Details
         </Link>

@@ -21,7 +21,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({ label, error, fullWidt
         id={inputId}
         className={`
           px-3 py-2 bg-white border shadow-sm border-gray-300 
-          focus:outline-none focus:border-blue-500 focus:ring-blue-500 block rounded-md sm:text-sm focus:ring-1
+          focus:outline-none focus:border-purple-500 focus:ring-purple-500 block rounded-md sm:text-sm focus:ring-1
           ${error ? 'border-red-500' : ''}
           ${fullWidth ? 'w-full' : ''}
           ${className}

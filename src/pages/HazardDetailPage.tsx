@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
@@ -7,23 +7,37 @@ import useAuthStore from '../store/authStore';
 import useHazardStore from '../store/hazardStore';
 
 const HazardDetailPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
   const { isAuthenticated } = useAuthStore();
   const { fetchHazards } = useHazardStore();
   const navigate = useNavigate();
-  
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     if (!isAuthenticated) {
-      navigate('/login');
+      setTimeout(() => navigate('/login'), 100);
+      return;
     }
-    
-    fetchHazards();
+
+    fetchHazards()
+      .finally(() => setLoading(false)); // Ensure loading state updates
   }, [isAuthenticated, navigate, fetchHazards]);
-  
+
   if (!isAuthenticated) {
-    return null;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-gray-600 text-lg">Redirecting to login...</p>
+      </div>
+    );
   }
-  
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-gray-600 text-lg">Loading hazard details...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
